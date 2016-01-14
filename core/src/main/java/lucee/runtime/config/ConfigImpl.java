@@ -932,9 +932,25 @@ public abstract class ConfigImpl implements Config {
             	list.add(mapping.getPageSource(realPath.substring(mapping.getVirtual().length())));
             }
         }
-        
+
+		// Retrieve the pageSource for the default mapping,
+		// to be able to compare it with the servlet engine's proposed path
+		PageSource defaultMappingPath = this.mappings[this.mappings.length-1].getPageSource(realPath);
+
+		// add pageSource determined by the servlet
+		// Special mappings can be set up in the servlet context (eg. by mod_cfml),
+		// which would otherwise go unnoticed
+		String servletContextPath = pc.getServletContext().getRealPath(realPath);
+
+		// if the servlet egnine returned a path which differs from the default mapping, add it to the list
+		if (servletContextPath != null && !servletContextPath.equalsIgnoreCase(defaultMappingPath.getDisplayPath())) {
+			// Oops. The PageSourceImpl needs a mapping. That's a bit too much for now...
+			PageSourceImpl servletEnginePageSource = new PageSourceImpl(*servletEngineMapping*, realPath);
+			list.add(servletEnginePageSource);
+		}
+
         if(useDefaultMapping){
-        	list.add(this.mappings[this.mappings.length-1].getPageSource(realPath));
+        	list.add(defaultMappingPath);
         }
         return list.toArray(new PageSource[list.size()]); 
     }
